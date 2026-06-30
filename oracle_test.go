@@ -33,7 +33,14 @@ func rubyBin(t *testing.T) string {
 	// targets. Old bundled IRBs (e.g. macOS system ruby 2.6) load the files but
 	// lack IRB::RubyLex#check_code_state / IRB::Color.colorize_code, so probe the
 	// actual methods and skip when they are missing.
+	// IRB::Color.colorize_code (and some RubyLex details) are version-sensitive;
+	// this port targets the irb shipped with Ruby >= 4.0. Older bundled IRBs
+	// (e.g. the 1.14.x in Ruby 3.4 CI images, or macOS system ruby 2.6) load the
+	// files but emit different colour/lex output, so gate the live oracle on the
+	// Ruby version. CI lanes below 4.0 skip it and the committed golden corpora
+	// (which hold 100% coverage on their own) remain the correctness gate.
 	probe := `require 'irb'; require 'irb/ruby-lex'; require 'irb/color'
+raise unless RUBY_VERSION >= "4.0"
 raise unless IRB.const_defined?(:RubyLex)
 raise unless IRB::RubyLex.instance_method(:check_code_state)
 raise unless IRB::RubyLex.instance_method(:process_indent_level)
