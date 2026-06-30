@@ -38,8 +38,6 @@ jobs:
       - run: go build ./...
       - name: Test + 100% coverage gate
         shell: bash
-        env:
-          CGO_ENABLED: "0"
         run: |
           COVERPKG=$(go list ./... | paste -sd, -)
           go test -race -coverpkg="$COVERPKG" -coverprofile=cover.out ./...
