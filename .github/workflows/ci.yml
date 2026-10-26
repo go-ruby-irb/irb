@@ -47,6 +47,21 @@ jobs:
           awk -v t="$cov" 'BEGIN { exit !(t+0 >= 100.0) }' || {
             echo "::error::coverage ${cov}% < 100%"; exit 1; }
 
+  # The lexer reads whatever a person types at a prompt: it must end on every
+  # input. A word list with a newline once looped forever (TestLexTerminates).
+  security:
+    name: govulncheck + fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.27.3
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - name: Fuzz CheckCode for 60 s
+        run: go test -run '^$' -fuzz FuzzCheckCode -fuzztime 60s .
+
   # Validate the library on the six supported 64-bit targets. amd64/arm64 run
   # natively; the rest run the suite under qemu-user. The oracle tests skip under
   # qemu (no target-arch ruby with a modern irb), so this checks the pure-Go

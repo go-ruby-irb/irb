@@ -205,13 +205,14 @@ var (
 	heredocQuoted    = regexp.MustCompile("<<[-~]?(['\"`])(\\w+)(['\"`])")
 )
 
-// ltypeTokens are the open-literal events that contribute an ltype character.
-// Word-list literals (%w/%i/%W/%I) are intentionally absent: this tokenizer
-// always closes them (Ripper retags their final word as on_tstring_end), so a
-// word-list beg never remains in the open-token list.
+// ltypeTokens are the open-literal events that contribute an ltype character
+// (IRB's LTYPE_TOKENS). A word list (%w/%W/%i/%I) that ends in a word is
+// closed as Ripper closes it (its final word retagged on_tstring_end), but one
+// that ends in a separator — `%w[a b` and a newline — stays open, and shows ].
 var ltypeTokens = map[Event]bool{
 	EvHeredocBeg: true, EvTstringBeg: true, EvRegexpBeg: true,
 	EvSymbeg: true, EvBacktick: true,
+	EvQwordsBeg: true, EvWordsBeg: true, EvQsymbolsBeg: true, EvSymbolsBeg: true,
 }
 
 // LtypeFromOpenTokens ports RubyLex#ltype_from_open_tokens: the literal-type
@@ -245,6 +246,8 @@ func LtypeFromOpenTokens(opens []Token) string {
 		return ":"
 	case EvBacktick:
 		return "`"
+	case EvQwordsBeg, EvWordsBeg, EvQsymbolsBeg, EvSymbolsBeg:
+		return "]"
 	default: // EvHeredocBeg — the only remaining ltype token
 		if m := heredocQuoted.FindStringSubmatch(start.Tok); m != nil {
 			return m[1]
