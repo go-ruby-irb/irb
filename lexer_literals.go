@@ -219,7 +219,9 @@ func (l *lexer) scanWordList(open, close byte, interp bool) {
 		// separator run
 		sstart := l.pos
 		sline, scol := l.startPos()
-		for !l.eof() && isSpace(l.peek()) {
+		// A newline separates words too (%w[a\nb]); the word loop below stops
+		// at one, so leaving it here would make an empty word forever.
+		for !l.eof() && (isSpace(l.peek()) || l.peek() == '\n') {
 			l.advance(1)
 		}
 		if l.pos > sstart {
